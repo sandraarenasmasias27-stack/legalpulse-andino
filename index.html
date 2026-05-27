@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LegalPulse Andino</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --primary: #1e3a5f;
+      --primary-light: #2c5282;
+      --accent: #e53e3e;
+      --accent-orange: #dd6b20;
+      --accent-yellow: #d69e2e;
+      --accent-green: #38a169;
+      --bg: #f7fafc;
+      --card-bg: #ffffff;
+      --text: #1a202c;
+      --text-secondary: #4a5568;
+      --border: #e2e8f0;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* HEADER */
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+      color: white;
+      padding: 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 32px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .logo h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .logo span {
+      font-size: 12px;
+      opacity: 0.8;
+      display: block;
+      margin-top: -2px;
+    }
+
+    .header-date {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    /* STATS BAR */
+    .stats-bar {
+      display: flex;
+      gap: 24px;
+      padding: 10px 32px;
+      background: rgba(0,0,0,0.15);
+      font-size: 13px;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stat-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .stat-dot.critico { background: var(--accent); }
+    .stat-dot.alto { background: var(--accent-orange); }
+    .stat-dot.medio { background: var(--accent-yellow); }
+    .stat-dot.bajo { background: var(--accent-green); }
+
+    /* MAIN LAYOUT */
+    .main-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 32px;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 24px;
+    }
+
+    /* SIDEBAR FILTERS */
+    .sidebar {
+      position: sticky;
+      top: 110px;
+      align-self: start;
+    }
+
+    .filter-section {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: var(--shadow);
+      margin-bottom: 16px;
+    }
+
+    .filter-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+
+    .filter-btn {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 8px 12px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text);
+      transition: all 0.15s;
+      margin-bottom: 2px;
+    }
+
+    .filter-btn:hover { background: #edf2f7; }
+    .filter-btn.active { background: var(--primary); color: white; font-weight: 600; }
+
+    .filter-btn .count {
+      float: right;
+      background: #edf2f7;
+      padding: 1px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    .filter-btn.active .count {
+      background: rgba(255,255,255,0.2);
+      color: white;
+    }
+
+    /* NEWS FEED */
+    .feed { min-width: 0; }
+
+    .feed-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .feed-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .search-box {
+      position: relative;
+    }
+
+    .search-box input {
+      padding: 8px 16px 8px 36px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 13px;
+      width: 280px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-box input:focus { border-color: var(--primary); }
+
+    .search-box::before {
+      content: '🔍';
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+    }
+
+    /* NEWS CARD */
+    .news-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow);
+      border-left: 4px solid transparent;
+      transition: box-shadow 0.2s, transform 0.15s;
+      cursor: pointer;
+    }
+
+    .news-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    .news-card.critico { border-left-color: var(--accent); }
+    .news-card.alto { border-left-color: var(--accent-orange); }
+    .news-card.medio { border-left-color: var(--accent-yellow); }
+    .news-card.bajo { border-left-color: var(--accent-green); }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .card-meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge.critico { background: #fed7d7; color: #c53030; }
+    .badge.alto { background: #feebc8; color: #c05621; }
+    .badge.medio { background: #fefcbf; color: #975a16; }
+    .badge.bajo { background: #c6f6d5; color: #276749; }
+
+    .badge-tipo {
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      background: #e2e8f0;
+      color: var(--text-secondary);
+    }
+
+    .card-date {
+      font-size: 12px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+
+    .card-summary {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    .card-impact {
+      background: #f7fafc;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .card-impact strong {
+      color: var(--primary);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .card-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-sectors {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .sector-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      background: #ebf4ff;
+      color: var(--primary-light);
+      border-radius: 6px;
+    }
+
+    .card-source {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .card-source a {
+      color: var(--primary-light);
+      text-decoration: none;
+    }
+
+    .card-source a:hover { text-decoration: underline; }
+
+    /* LINK DIRECTO */
+    .card-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: var(--primary);
+      color: white;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s;
+      margin-top: 10px;
+    }
+
+    .card-link:hover { background: var(--primary-light); }
+
+    .card-link-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+      margin-top: 10px;
+      margin-left: 8px;
+    }
+
+    .card-link-secondary:hover { background: var(--primary); color: white; }
+
+    /* EXPANDED CARD */
+    .card-expanded {
+      display: none;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .card-expanded.show { display: block; }
+
+    .card-empresas {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .empresa-tag {
+      font-size: 11px;
+      padding: 3px 10px;
+      background: #fef3cd;
+      color: #856404;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state h3 { font-size: 18px; margin-bottom: 8px; color: var(--text); }
+
+    /* LOADING */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-secondary);
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .main-container {
+        grid-template-columns: 1fr;
+        padding: 16px;
+      }
+      .sidebar {
+        position: static;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+      }
+      .filter-section { min-width: 200px; }
+      .header-top { padding: 12px 16px; }
+      .stats-bar { padding: 8px 16px; gap: 16px; overflow-x: auto; }
+      .search-box input { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="logo">
+      <div class="logo-icon">⚖️</div>
+      <div>
+        <h1>LegalPulse</h1>
+        <span>Inteligencia Legal — Grupo Andino</span>
+      </div>
+    </div>
+    <div class="header-date" id="headerDate"></div>
+  </div>
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-item"><div class="stat-dot critico"></div><span id="countCritico">0</span> Críticas</div>
+    <div class="stat-item"><div class="stat-dot alto"></div><span id="countAlto">0</span> Alta</div>
+    <div class="stat-item"><div class="stat-dot medio"></div><span id="countMedio">0</span> Media</div>
+    <div class="stat-item"><div class="stat-dot bajo"></div><span id="countBajo">0</span> Baja</div>
+    <div class="stat-item" style="margin-left:auto">Total: <strong id="countTotal">0</strong> noticias</div>
+  </div>
+</header>
+
+<div class="main-container">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="filter-section">
+      <div class="filter-title">Sector</div>
+      <button class="filter-btn active" data-sector="todos" onclick="filterSector(this)">Todos</button>
+      <div id="sectorFilters"></div>
+    </div>
+    <div class="filter-section">
+      <div class="filter-title">Impacto</div>
+      <button class="filter-btn active" data-impacto="todos" onclick="filterImpacto(this)">Todos</button>
+      <button class="filter-btn" data-impacto="critico" onclick="filterImpacto(this)">🔴 Crítico</button>
+      <button class="filter-btn" data-impacto="alto" onclick="filterImpacto(this)">🟠 Alto</button>
+      <button class="filter-btn" data-impacto="medio" onclick="filterImpacto(this)">🟡 Medio</button>
+      <button class="filter-btn" data-impacto="bajo" onclick="filterImpacto(this)">🟢 Bajo</button>
+    </div>
+    <div class="filter-section">
+      <div class="filter-title">Tipo</div>
+      <button class="filter-btn active" data-tipo="todos" onclick="filterTipo(this)">Todos</button>
+      <button class="filter-btn" data-tipo="ley" onclick="filterTipo(this)">Ley</button>
+      <button class="filter-btn" data-tipo="decreto" onclick="filterTipo(this)">Decreto</button>
+      <button class="filter-btn" data-tipo="resolucion" onclick="filterTipo(this)">Resolución</button>
+      <button class="filter-btn" data-tipo="directiva" onclick="filterTipo(this)">Directiva</button>
+      <button class="filter-btn" data-tipo="comunicado" onclick="filterTipo(this)">Comunicado</button>
+      <button class="filter-btn" data-tipo="noticia" onclick="filterTipo(this)">Noticia</button>
+    </div>
+  </aside>
+
+  <!-- FEED -->
+  <main class="feed">
+    <div class="feed-header">
+      <div class="feed-title" id="feedTitle">Todas las noticias</div>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Buscar norma, ley, tema..." oninput="onSearch()">
+      </div>
+    </div>
+    <div id="newsFeed">
+      <div class="loading">
+        <div class="spinner"></div>
+        Cargando noticias legales...
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // Supabase config
+  const SUPABASE_URL = 'https://twruinsuiqkdjclxuoim.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3cnVpbnN1aXFrZGpjbHh1b2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4Mzc5OTUsImV4cCI6MjA5NTQxMzk5NX0.w5vq9sfc25mBesvX6LApnxfaUrKk_slR06Uic5UkWtU';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // State
+  let allNoticias = [];
+  let sectores = [];
+  let currentFilters = { sector: 'todos', impacto: 'todos', tipo: 'todos', search: '' };
+
+  // Date display
+  const today = new Date();
+  const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+  document.getElementById('headerDate').textContent = today.toLocaleDateString('es-PE', options);
+
+  // Initialize
+  async function init() {
+    await loadSectores();
+    await loadNoticias();
+  }
+
+  async function loadSectores() {
+    const { data } = await supabase.from('sectores').select('*').order('id');
+    sectores = data || [];
+
+    const container = document.getElementById('sectorFilters');
+    container.innerHTML = sectores.map(s =>
+      `<button class="filter-btn" data-sector="${s.id}" onclick="filterSector(this)">${s.nombre}</button>`
+    ).join('');
+  }
+
+  async function loadNoticias() {
+    const { data, error } = await supabase
+      .from('noticias')
+      .select(`*, noticias_sectores(sector_id), fuentes(nombre, url)`)
+      .order('fecha_publicacion', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) {
+      console.error('Error:', error);
+      document.getElementById('newsFeed').innerHTML = `
+        <div class="empty-state">
+          <div class="icon">📡</div>
+          <h3>Conectando con la base de datos...</h3>
+          <p>El sistema se está configurando. Las noticias aparecerán aquí pronto.</p>
+        </div>`;
+      return;
+    }
+
+    allNoticias = data || [];
+    updateStats();
+    renderNoticias();
+  }
+
+  function updateStats() {
+    const filtered = getFilteredNoticias();
+    document.getElementById('countCritico').textContent = filtered.filter(n => n.nivel_impacto === 'critico').length;
+    document.getElementById('countAlto').textContent = filtered.filter(n => n.nivel_impacto === 'alto').length;
+    document.getElementById('countMedio').textContent = filtered.filter(n => n.nivel_impacto === 'medio').length;
+    document.getElementById('countBajo').textContent = filtered.filter(n => n.nivel_impacto === 'bajo').length;
+    document.getElementById('countTotal').textContent = filtered.length;
+  }
+
+  function getFilteredNoticias() {
+    return allNoticias.filter(n => {
+      if (currentFilters.sector !== 'todos') {
+        const sectorIds = (n.noticias_sectores || []).map(ns => ns.sector_id);
+        if (!sectorIds.includes(parseInt(currentFilters.sector))) return false;
+      }
+      if (currentFilters.impacto !== 'todos' && n.nivel_impacto !== currentFilters.impacto) return false;
+      if (currentFilters.tipo !== 'todos' && n.tipo_norma !== currentFilters.tipo) return false;
+      if (currentFilters.search) {
+        const q = currentFilters.search.toLowerCase();
+        const searchable = `${n.titulo} ${n.resumen} ${(n.tags || []).join(' ')} ${(n.empresas_afectadas || []).join(' ')}`.toLowerCase();
+        if (!searchable.includes(q)) return false;
+      }
+      return true;
+    });
+  }
+
+  function renderNoticias() {
+    const noticias = getFilteredNoticias();
+    const feed = document.getElementById('newsFeed');
+
+    if (noticias.length === 0) {
+      feed.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">📰</div>
+          <h3>No hay noticias aún</h3>
+          <p>Las noticias legales se cargarán automáticamente cada día.<br>
+          El sistema monitorea El Peruano, reguladores y medios especializados.</p>
+        </div>`;
+      return;
+    }
+
+    feed.innerHTML = noticias.map(n => {
+      const sectorNames = (n.noticias_sectores || []).map(ns => {
+        const s = sectores.find(sec => sec.id === ns.sector_id);
+        return s ? s.nombre : '';
+      }).filter(Boolean);
+
+      const fecha = new Date(n.fecha_publicacion).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });
+      const tipoLabel = { ley: 'Ley', decreto: 'Decreto', resolucion: 'Resolución', directiva: 'Directiva', comunicado: 'Comunicado', noticia: 'Noticia', otro: 'Otro' };
+
+      return `
+        <div class="news-card ${n.nivel_impacto}" onclick="toggleCard(this)">
+          <div class="card-top">
+            <div class="card-meta">
+              <span class="badge ${n.nivel_impacto}">${n.nivel_impacto}</span>
+              ${n.tipo_norma ? `<span class="badge-tipo">${tipoLabel[n.tipo_norma] || n.tipo_norma}</span>` : ''}
+            </div>
+            <span class="card-date">${fecha}</span>
+          </div>
+          <div class="card-title">${n.titulo}</div>
+          <div class="card-summary">${n.resumen}</div>
+          ${n.analisis_impacto ? `
+            <div class="card-impact">
+              <strong>Impacto en Grupo Andino:</strong><br>
+              ${n.analisis_impacto}
+            </div>` : ''}
+          <div class="card-bottom">
+            <div class="card-sectors">
+              ${sectorNames.map(s => `<span class="sector-tag">${s}</span>`).join('')}
+            </div>
+            ${n.fuentes ? `<span class="card-source">Fuente: ${n.fuentes.nombre}</span>` : ''}
+          </div>
+          <div>
+            ${n.url_fuente ? `<a href="${n.url_fuente}" target="_blank" class="card-link" onclick="event.stopPropagation()">Ver noticia completa →</a>` : ''}
+            ${n.fuentes && n.fuentes.url ? `<a href="${n.fuentes.url}" target="_blank" class="card-link-secondary" onclick="event.stopPropagation()">Ir a ${n.fuentes.nombre}</a>` : ''}
+          </div>
+          <div class="card-expanded">
+            ${n.empresas_afectadas && n.empresas_afectadas.length ? `
+              <strong style="font-size:12px;color:var(--text-secondary)">EMPRESAS AFECTADAS:</strong>
+              <div class="card-empresas">
+                ${n.empresas_afectadas.map(e => `<span class="empresa-tag">${e}</span>`).join('')}
+              </div>` : ''}
+            ${n.tags && n.tags.length ? `
+              <div style="margin-top:8px">
+                <strong style="font-size:12px;color:var(--text-secondary)">TAGS:</strong>
+                ${n.tags.map(t => `<span class="sector-tag" style="margin:2px">${t}</span>`).join('')}
+              </div>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function toggleCard(el) {
+    const expanded = el.querySelector('.card-expanded');
+    expanded.classList.toggle('show');
+  }
+
+  function filterSector(btn) {
+    document.querySelectorAll('[data-sector]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilters.sector = btn.dataset.sector;
+    updateStats();
+    renderNoticias();
+  }
+
+  function filterImpacto(btn) {
+    document.querySelectorAll('[data-impacto]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilters.impacto = btn.dataset.impacto;
+    updateStats();
+    renderNoticias();
+  }
+
+  function filterTipo(btn) {
+    document.querySelectorAll('[data-tipo]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilters.tipo = btn.dataset.tipo;
+    updateStats();
+    renderNoticias();
+  }
+
+  function onSearch() {
+    currentFilters.search = document.getElementById('searchInput').value;
+    updateStats();
+    renderNoticias();
+  }
+
+  // Auto-refresh every 5 minutes
+  setInterval(loadNoticias, 5 * 60 * 1000);
+
+  // Start
+  init();
+</script>
+
+</body>
+</html>

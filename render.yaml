@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: legalpulse-andino
+    runtime: static
+    buildCommand: echo "Static site - no build needed"
+    staticPublishPath: .
+    pullRequestPreviewsEnabled: false
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=300
