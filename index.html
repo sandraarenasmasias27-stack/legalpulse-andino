@@ -523,7 +523,7 @@
   // Supabase config
   const SUPABASE_URL = 'https://twruinsuiqkdjclxuoim.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR3cnVpbnN1aXFrZGpjbHh1b2ltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4Mzc5OTUsImV4cCI6MjA5NTQxMzk5NX0.w5vq9sfc25mBesvX6LApnxfaUrKk_slR06Uic5UkWtU';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   // State
   let allNoticias = [];
@@ -542,7 +542,7 @@
   }
 
   async function loadSectores() {
-    const { data } = await supabase.from('sectores').select('*').order('id');
+    const { data } = await db.from('sectores').select('*').order('id');
     sectores = data || [];
 
     const container = document.getElementById('sectorFilters');
@@ -552,7 +552,7 @@
   }
 
   async function loadNoticias() {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from('noticias')
       .select(`*, noticias_sectores(sector_id), fuentes(nombre, url)`)
       .order('fecha_publicacion', { ascending: false })
