@@ -552,12 +552,18 @@
   }
 
   async function loadNoticias() {
+    // Solo mostrar noticias de los últimos 2 días
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+    const dateFilter = twoDaysAgo.toISOString().split('T')[0]; // formato YYYY-MM-DD
+
     const { data, error } = await db
       .from('noticias')
       .select(`*, noticias_sectores(sector_id), fuentes(nombre, url)`)
+      .gte('fecha_publicacion', dateFilter)
       .order('fecha_publicacion', { ascending: false })
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(50);
 
     if (error) {
       console.error('Error:', error);
@@ -609,9 +615,9 @@
       feed.innerHTML = `
         <div class="empty-state">
           <div class="icon">📰</div>
-          <h3>No hay noticias aún</h3>
-          <p>Las noticias legales se cargarán automáticamente cada día.<br>
-          El sistema monitorea El Peruano, reguladores y medios especializados.</p>
+          <h3>No hay noticias recientes</h3>
+          <p>No se encontraron noticias de los últimos 2 días con los filtros seleccionados.<br>
+          El sistema se actualiza cada mañana a las 7:45 AM.</p>
         </div>`;
       return;
     }
