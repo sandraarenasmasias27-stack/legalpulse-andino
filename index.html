@@ -628,7 +628,10 @@
         return s ? s.nombre : '';
       }).filter(Boolean);
 
-      const fecha = new Date(n.fecha_publicacion).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });
+      // Evitar desfase de timezone: parsear como fecha local, no UTC
+      const [year, month, day] = n.fecha_publicacion.split('-');
+      const fechaLocal = new Date(year, month - 1, day);
+      const fecha = fechaLocal.toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });
       const tipoLabel = { ley: 'Ley', decreto: 'Decreto', resolucion: 'Resolución', directiva: 'Directiva', comunicado: 'Comunicado', noticia: 'Noticia', otro: 'Otro' };
 
       return `
