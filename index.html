@@ -505,7 +505,10 @@
   <!-- FEED -->
   <main class="feed">
     <div class="feed-header">
-      <div class="feed-title" id="feedTitle">Todas las noticias</div>
+      <div>
+        <div class="feed-title" id="feedTitle">Todas las noticias</div>
+        <div id="editionInfo" style="font-size:12px;color:var(--text-secondary);margin-top:2px;"></div>
+      </div>
       <div class="search-box">
         <input type="text" id="searchInput" placeholder="Buscar norma, ley, tema..." oninput="onSearch()">
       </div>
@@ -530,10 +533,12 @@
   let sectores = [];
   let currentFilters = { sector: 'todos', impacto: 'todos', tipo: 'todos', search: '' };
 
-  // Date display
+  // Date display: el encabezado muestra SOLO la fecha de hoy, claramente etiquetada.
+  // La fecha de publicación real de cada norma se muestra en cada tarjeta y en el
+  // indicador "Última edición", que se calcula a partir de los datos (ver renderNoticias).
   const today = new Date();
   const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-  document.getElementById('headerDate').textContent = today.toLocaleDateString('es-PE', options);
+  document.getElementById('headerDate').textContent = 'Hoy: ' + today.toLocaleDateString('es-PE', options);
 
   // Initialize
   async function init() {
@@ -607,7 +612,27 @@
     });
   }
 
+  // Convierte 'YYYY-MM-DD' en una fecha local (evita el desfase de zona horaria de new Date('YYYY-MM-DD'), que la interpreta como UTC)
+  function parseFechaLocal(f) {
+    const [year, month, day] = f.split('-');
+    return new Date(year, month - 1, day);
+  }
+
+  function updateEditionInfo() {
+    const el = document.getElementById('editionInfo');
+    if (!el) return;
+    if (!allNoticias.length) { el.textContent = ''; return; }
+    // Fecha de publicación más reciente entre los datos reales (no la fecha de hoy)
+    const ultima = allNoticias
+      .map(n => n.fecha_publicacion)
+      .sort()
+      .slice(-1)[0];
+    const fecha = parseFechaLocal(ultima).toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    el.textContent = `Última edición publicada: ${fecha}`;
+  }
+
   function renderNoticias() {
+    updateEditionInfo();
     const noticias = getFilteredNoticias();
     const feed = document.getElementById('newsFeed');
 
@@ -629,9 +654,7 @@
       }).filter(Boolean);
 
       // Evitar desfase de timezone: parsear como fecha local, no UTC
-      const [year, month, day] = n.fecha_publicacion.split('-');
-      const fechaLocal = new Date(year, month - 1, day);
-      const fecha = fechaLocal.toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });
+      const fecha = parseFechaLocal(n.fecha_publicacion).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });
       const tipoLabel = { ley: 'Ley', decreto: 'Decreto', resolucion: 'Resolución', directiva: 'Directiva', comunicado: 'Comunicado', noticia: 'Noticia', otro: 'Otro' };
 
       return `
